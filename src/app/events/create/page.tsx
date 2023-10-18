@@ -16,11 +16,8 @@ export default function EventForm(){
         event.preventDefault();
      
         try {
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/events`, {title: eventTitle})
-     
-            if (response){
-                router.push('/');
-            }
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/events`, {title: eventTitle})
+            router.push('/');
 
         } catch (e) {
             console.log(e);

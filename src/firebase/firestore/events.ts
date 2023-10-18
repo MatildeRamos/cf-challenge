@@ -9,21 +9,21 @@ export async function getEvents(page: number = 1) {
 
     let q;
     if (page && page > 1) {
-        // Query the first page of docs
-        const first = query(eventsCol, orderBy("createdAt"), limit((page - 1) * EVENTS_LIMIT));
-        const documentSnapshots = await getDocs(first);
+        // Query already loaded events
+        const loaded = query(eventsCol, orderBy("createdAt", "desc"), limit((page - 1) * EVENTS_LIMIT));
+        const documentSnapshots = await getDocs(loaded);
 
         // Get the last visible document
-        const lastVisible = documentSnapshots.docs[documentSnapshots.docs.length-1];
+        const lastVisible = documentSnapshots.docs[documentSnapshots.docs.length - 1];
 
         // Construct a new query starting at this document
         q = query(eventsCol,
-            orderBy("createdAt"),
+            orderBy("createdAt", "desc"),
             startAfter(lastVisible),
             limit(EVENTS_LIMIT));
 
     } else {
-        q = query(eventsCol, orderBy("createdAt"), limit(EVENTS_LIMIT));
+        q = query(eventsCol, orderBy("createdAt", "desc"), limit(EVENTS_LIMIT));
     } 
     
     const eventsSnapshot = await getDocs(q);
@@ -46,11 +46,28 @@ export async function getEvents(page: number = 1) {
 }
 
 export async function createEvent(event: IEvent) {
+
+    const hostsRef= doc(collection(db, "hosts"));
+    console.log(hostsRef);
+    console.log(hostsRef.path);
+
+    //hardcode first host
+    const hosts = query(collection(db, "hosts"), limit(1));
+    const documentSnapshots = await getDocs(hosts);
+    const firstHost = documentSnapshots.docs[0];
+
+    //hardcode tomorrow's date
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    
+
     const newEvent = {
         ...event, 
         createdAt: new Date(),
-        date: new Date().getDate() + 1,
-    }
+        date: tomorrow,
+        hosts: [firstHost.ref],
+    };
     const eventsCol = collection(db, 'events');
 
     const docRef = await addDoc(eventsCol, newEvent);
@@ -58,7 +75,7 @@ export async function createEvent(event: IEvent) {
 }
 
 export function subscribeEvents(callback: (data: IEvent[], limit: number) => void){
-    let q = query(collection(db, "events"), orderBy('createdAt'));
+    let q = query(collection(db, "events"), orderBy('createdAt', "desc"));
     
     const unsubscribe = onSnapshot(q, async querySnapshot => {
 		const results = await Promise.all(querySnapshot.docs.map(async doc => {

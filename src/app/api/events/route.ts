@@ -7,15 +7,17 @@ export async function GET(request: NextRequest){
     const page = url.searchParams.get("page");
     let response;
     try {
+
         if (page){
-            response = await getEvents(+page) as {data: IEvent[], pageInfo: IEventPageInfo};
+            response = await getEvents(+page);
         } else {
-            response = await getEvents() as {data: IEvent[], pageInfo: IEventPageInfo};
+            response = await getEvents();
         }
 
         return NextResponse.json(response);
+
     } catch (e) {
-        NextResponse.json({ error: "Could not get events" }, { status: 500 })
+        return NextResponse.json({ error: "Could not get events" }, { status: 500 })
     }
 
 }
@@ -23,10 +25,11 @@ export async function GET(request: NextRequest){
 export async function POST(request: NextRequest){
     const body = await request.json();
     try {
+
         const docRef = await createEvent(body as IEvent);
         return NextResponse.json(docRef?.id);
 
     } catch (e) {
-        NextResponse.json({ error: "Could not create event" }, { status: 500 })
+        return NextResponse.json({ error: "Could not create event" }, { status: 500 })
     }
 }
