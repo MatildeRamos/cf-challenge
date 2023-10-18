@@ -1,10 +1,9 @@
-import Events from './events/page';
+import Events from "./events/page";
 
 export default function Home() {
-
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
-     <Events />
+      <Events />
     </main>
-  )
+  );
 }
