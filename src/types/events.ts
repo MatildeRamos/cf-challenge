@@ -3,7 +3,8 @@ export interface IEvent {
     title?: string;
     status?: string;
     date?: Date;
-    hosts?: [IHost];
+    hosts?: IHost[];
+    createdAt?: Date;
 }
 
 export interface IEventPageInfo {
@@ -11,6 +12,7 @@ export interface IEventPageInfo {
 }
 
 export interface IHost {
+    id: string;
     name: string;
     avatar: string;
 }

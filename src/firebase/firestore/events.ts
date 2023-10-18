@@ -1,8 +1,8 @@
-import { DocumentReference, addDoc, collection, doc, getDocs, limit, onSnapshot, orderBy, query, startAfter, startAt } from "firebase/firestore";
+import { DocumentReference, addDoc, collection, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, startAfter } from "firebase/firestore";
 import { db } from "../config";
-import { IEvent } from "@/types/events";
+import { IEvent, IHost } from "@/types/events";
 
-const EVENTS_LIMIT = 2;
+const EVENTS_LIMIT = 10;
 
 export async function getEvents(page: number = 1) {
     const eventsCol = collection(db, 'events');
@@ -27,50 +27,69 @@ export async function getEvents(page: number = 1) {
     } 
     
     const eventsSnapshot = await getDocs(q);
-    const eventsList = eventsSnapshot.docs.map(doc => doc.data());
+    const eventsList = await Promise.all(eventsSnapshot.docs.map(async doc => {
+        let hostData: IHost[] = [];
+            
+        if (doc.data().hosts){
+            hostData = await getHosts(doc.data().hosts) as IHost[];
+        }
+
+        return {
+            id: doc.id,
+            ...doc.data(),
+            date: doc.data().date?.toDate(),
+            createdAt: doc.data().createdAt?.toDate(),
+            hosts: [...hostData],
+        };
+    }));
     return {data: eventsList, pageInfo: {page: page}};
 }
 
 export async function createEvent(event: IEvent) {
-    const newEvent = {...event, createdAt: new Date()}
+    const newEvent = {
+        ...event, 
+        createdAt: new Date(),
+        date: new Date().getDate() + 1,
+    }
     const eventsCol = collection(db, 'events');
 
-    try {
-        const docRef = await addDoc(eventsCol, newEvent);
-        return docRef;
-    } catch (e) {
-        console.log("Error creating event: ", e);
-    }
+    const docRef = await addDoc(eventsCol, newEvent);
+    return docRef;
 }
 
 export function subscribeEvents(callback: (data: IEvent[], limit: number) => void){
     let q = query(collection(db, "events"), orderBy('createdAt'));
-    const unsubscribe = onSnapshot(q, querySnapshot => {
-        /*querySnapshot.docChanges().forEach(change => {
-            if (change.type === 'added') {
-              console.log('New city: ', change.doc.data());
-            }
-            if (change.type === 'modified') {
-              console.log('Modified city: ', change.doc.data());
-            }
-            if (change.type === 'removed') {
-              console.log('Removed city: ', change.doc.data());
-            }
-            console.log(change.type);
-            console.log(change.doc.data());
+    
+    const unsubscribe = onSnapshot(q, async querySnapshot => {
+		const results = await Promise.all(querySnapshot.docs.map(async doc => {
+            let hostData: IHost[] = [];
             
-          });*/
-		const results = querySnapshot.docs.map(doc => {
+            if (doc.data().hosts){
+                hostData = await getHosts(doc.data().hosts) as IHost[];
+            }
+
 			return {
 				id: doc.id,
-				...doc.data(),
-				// Only plain objects can be passed to Client Components from Server Components
-				// timestamp: doc.data().timestamp.toDate(),
+                ...doc.data(),
+                date: doc.data().date?.toDate(),
+                createdAt: doc.data().createdAt?.toDate(),
+                hosts: [...hostData],
 			};
-		});
+		}));
 
 		callback(results, EVENTS_LIMIT);
 	});
 
 	return unsubscribe;
+}
+
+function getHosts(hosts: DocumentReference[]){
+    return Promise.all(hosts.map(async (docRef: DocumentReference) => {
+        const host = await getDoc(docRef);
+        return {
+            id: host.id,
+            ...host.data(),
+        }
+    }));
+
 }

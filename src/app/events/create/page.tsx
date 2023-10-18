@@ -16,12 +16,11 @@ export default function EventForm(){
         event.preventDefault();
      
         try {
-        const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/events`, {title: eventTitle})
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/api/events`, {title: eventTitle})
      
-        console.log(response);
-        if (response){
-            router.push('/');
-        }
+            if (response){
+                router.push('/');
+            }
 
         } catch (e) {
             console.log(e);
@@ -29,16 +28,22 @@ export default function EventForm(){
       }
 
     return (
-        <div>
-            <h1>Create New Event</h1>
-            <form method="POST" onSubmit={onSubmit}>
-                <div>
-                <label>Title</label>
-                <input type="text" name="title" value={eventTitle} onChange={handleEventTitleChange}/>
+        <div className="h-100 w-full flex items-center justify-center bg-teal-lightest">
+            <div className="bg-white rounded shadow p-6 m-4 w-full lg:w-3/4 lg:max-w-lg">
+                <div className="mb-4">
+                    <h1 className="text-grey-darkest">Create New Event</h1>
                 </div>
+                <div className="flex mb-4 items-center">
+                <form method="POST" onSubmit={onSubmit} >
+                    <div className="mb-4">
+                        <label className="block text-gray-700 text-sm font-bold mb-2">Title</label>
+                        <input type="text" name="title" value={eventTitle} onChange={handleEventTitleChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight"/>
+                    </div>
 
-                <button type="submit">Add Event</button>
-            </form>
+                    <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" >Add Event</button>
+                </form>
+                </div>
+            </div>
         </div>
     );
 }
